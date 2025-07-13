@@ -17,17 +17,13 @@ export const PixiPreview: React.FC = () => {
     let isMounted = true;
     let app: Application | null = null;
 
-    const init = () => {
-      const instance = new Application({
-        width: 360,
-        height: 280,
-        background: { color: 0x0a0a0a },
-        renderer: {
-          antialias: true,
-          resolution: window.devicePixelRatio || 1,
-        },
-      });
-
+    Application.create({
+      width: 360,
+      height: 280,
+      background: { color: 0x0a0a0a },
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+    }).then((instance) => {
       if (!isMounted) {
         instance.destroy();
         return;
@@ -35,7 +31,7 @@ export const PixiPreview: React.FC = () => {
 
       app = instance;
       appRef.current = instance;
-      canvasRef.current!.appendChild(instance.view as HTMLCanvasElement);
+      canvasRef.current!.appendChild(instance.canvas as HTMLCanvasElement);
 
       // Create crosshair container
       const crosshairContainer = new Container();
@@ -68,15 +64,12 @@ export const PixiPreview: React.FC = () => {
       instance.stage.addChildAt(centerLines, 1);
 
       setInitialized(true);
-
-    };
-
-    init();
+    });
 
     return () => {
       isMounted = false;
-      if (app && app.view && app.view.parentNode) {
-        app.view.parentNode.removeChild(app.view as HTMLCanvasElement);
+      if (app && app.canvas && app.canvas.parentNode) {
+        app.canvas.parentNode.removeChild(app.canvas as HTMLCanvasElement);
       }
       if (app) {
         app.destroy();
