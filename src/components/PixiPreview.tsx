@@ -14,52 +14,61 @@ export const PixiPreview: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const app = new Application({
-      width: 360,
-      height: 280,
-      background: { color: 0x0a0a0a },
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-    });
+    let app: Application;
+    let view: HTMLCanvasElement;
 
-    appRef.current = app;
-    canvasRef.current.appendChild(app.canvas as HTMLCanvasElement);
+    const init = async () => {
+      const instance = await Application.create({
+        width: 360,
+        height: 280,
+        background: { color: 0x0a0a0a },
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+      });
 
-    // Create crosshair container
-    const crosshairContainer = new Container();
-    crosshairContainer.x = app.screen.width / 2;
-    crosshairContainer.y = app.screen.height / 2;
-    crosshairRef.current = crosshairContainer;
-    app.stage.addChild(crosshairContainer);
+      app = instance;
+      appRef.current = instance;
+      view = (instance as any).canvas ?? (instance as any).view;
+      canvasRef.current!.appendChild(view as HTMLCanvasElement);
 
-    // Add background grid effect
-    const grid = new Graphics();
-    for (let i = 0; i <= app.screen.width; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(i, 0);
-      grid.lineTo(i, app.screen.height);
-    }
-    for (let i = 0; i <= app.screen.height; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(0, i);
-      grid.lineTo(app.screen.width, i);
-    }
-    app.stage.addChildAt(grid, 0);
+      // Create crosshair container
+      const crosshairContainer = new Container();
+      crosshairContainer.x = app.screen.width / 2;
+      crosshairContainer.y = app.screen.height / 2;
+      crosshairRef.current = crosshairContainer;
+      app.stage.addChild(crosshairContainer);
 
-    // Add center lines
-    const centerLines = new Graphics();
-    centerLines.lineStyle(1, 0x555555, 0.5);
-    centerLines.moveTo(app.screen.width / 2, 0);
-    centerLines.lineTo(app.screen.width / 2, app.screen.height);
-    centerLines.moveTo(0, app.screen.height / 2);
-    centerLines.lineTo(app.screen.width, app.screen.height / 2);
-    app.stage.addChildAt(centerLines, 1);
+      // Add background grid effect
+      const grid = new Graphics();
+      for (let i = 0; i <= app.screen.width; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(i, 0);
+        grid.lineTo(i, app.screen.height);
+      }
+      for (let i = 0; i <= app.screen.height; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(0, i);
+        grid.lineTo(app.screen.width, i);
+      }
+      app.stage.addChildAt(grid, 0);
 
-    setInitialized(true);
+      // Add center lines
+      const centerLines = new Graphics();
+      centerLines.lineStyle(1, 0x555555, 0.5);
+      centerLines.moveTo(app.screen.width / 2, 0);
+      centerLines.lineTo(app.screen.width / 2, app.screen.height);
+      centerLines.moveTo(0, app.screen.height / 2);
+      centerLines.lineTo(app.screen.width, app.screen.height / 2);
+      app.stage.addChildAt(centerLines, 1);
+
+      setInitialized(true);
+    };
+
+    init();
 
     return () => {
-      if (app && app.canvas && app.canvas.parentNode) {
-        app.canvas.parentNode.removeChild(app.canvas as HTMLCanvasElement);
+      if (view && view.parentNode) {
+        view.parentNode.removeChild(view);
       }
       if (app) {
         app.destroy();
