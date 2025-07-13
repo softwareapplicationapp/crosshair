@@ -115,8 +115,9 @@ export const PixiPreview: React.FC = () => {
           resolution: window.devicePixelRatio || 1,
         });
       } else {
-        console.log('PixiPreview init: using new Application');
-        instance = new Application({
+        console.log('PixiPreview init: using new Application + init');
+        instance = new Application();
+        await (instance as any).init({
           width: 360,
           height: 280,
           background: { color: 0x0a0a0a },
