@@ -9,56 +9,72 @@ export const PixiPreview: React.FC = () => {
   const crosshairRef = useRef<Container | null>(null);
   const { config } = useCrosshair();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Initialize PIXI Application
-    const app = new Application({
-      width: 360,
-      height: 280,
-      background: { color: 0x0a0a0a },
-      renderer: {
-        antialias: true,
-        resolution: window.devicePixelRatio || 1,
-      },
-    });
+    let isMounted = true;
+    let app: Application | null = null;
 
-    appRef.current = app;
-    canvasRef.current.appendChild(app.view as HTMLCanvasElement);
+    const init = () => {
+      const instance = new Application({
+        width: 360,
+        height: 280,
+        background: { color: 0x0a0a0a },
+        renderer: {
+          antialias: true,
+          resolution: window.devicePixelRatio || 1,
+        },
+      });
 
-    // Create crosshair container
-    const crosshairContainer = new Container();
-    crosshairContainer.x = app.screen.width / 2;
-    crosshairContainer.y = app.screen.height / 2;
-    crosshairRef.current = crosshairContainer;
-    app.stage.addChild(crosshairContainer);
+      if (!isMounted) {
+        instance.destroy();
+        return;
+      }
 
-    // Add background grid effect
-    const grid = new Graphics();
-    for (let i = 0; i <= app.screen.width; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(i, 0);
-      grid.lineTo(i, app.screen.height);
-    }
-    for (let i = 0; i <= app.screen.height; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(0, i);
-      grid.lineTo(app.screen.width, i);
-    }
-    app.stage.addChildAt(grid, 0);
+      app = instance;
+      appRef.current = instance;
+      canvasRef.current!.appendChild(instance.view as HTMLCanvasElement);
 
-    // Add center lines
-    const centerLines = new Graphics();
-    centerLines.lineStyle(1, 0x555555, 0.5);
-    centerLines.moveTo(app.screen.width / 2, 0);
-    centerLines.lineTo(app.screen.width / 2, app.screen.height);
-    centerLines.moveTo(0, app.screen.height / 2);
-    centerLines.lineTo(app.screen.width, app.screen.height / 2);
-    app.stage.addChildAt(centerLines, 1);
+      // Create crosshair container
+      const crosshairContainer = new Container();
+      crosshairContainer.x = instance.screen.width / 2;
+      crosshairContainer.y = instance.screen.height / 2;
+      crosshairRef.current = crosshairContainer;
+      instance.stage.addChild(crosshairContainer);
+
+      // Add background grid effect
+      const grid = new Graphics();
+      for (let i = 0; i <= instance.screen.width; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(i, 0);
+        grid.lineTo(i, instance.screen.height);
+      }
+      for (let i = 0; i <= instance.screen.height; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(0, i);
+        grid.lineTo(instance.screen.width, i);
+      }
+      instance.stage.addChildAt(grid, 0);
+
+      // Add center lines
+      const centerLines = new Graphics();
+      centerLines.lineStyle(1, 0x555555, 0.5);
+      centerLines.moveTo(instance.screen.width / 2, 0);
+      centerLines.lineTo(instance.screen.width / 2, instance.screen.height);
+      centerLines.moveTo(0, instance.screen.height / 2);
+      centerLines.lineTo(instance.screen.width, instance.screen.height / 2);
+      instance.stage.addChildAt(centerLines, 1);
+
+      setInitialized(true);
+
+    };
+
+    init();
 
     return () => {
-      // Use the local app variable to ensure we're cleaning up the correct instance
+      isMounted = false;
       if (app && app.view && app.view.parentNode) {
         app.view.parentNode.removeChild(app.view);
       }
@@ -66,6 +82,8 @@ export const PixiPreview: React.FC = () => {
         app.destroy();
       }
       appRef.current = null;
+      crosshairRef.current = null;
+      setInitialized(false);
     };
   }, []);
 
@@ -154,7 +172,7 @@ export const PixiPreview: React.FC = () => {
       dot.endFill();
       crosshairRef.current.addChild(dot);
     }
-  }, [config]);
+  }, [config, initialized]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
