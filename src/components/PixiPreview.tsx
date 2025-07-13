@@ -89,6 +89,8 @@ export const PixiPreview: React.FC = () => {
       dot.endFill();
       container.addChild(dot);
     }
+
+    console.log('PixiPreview draw: container now has', container.children.length, 'children');
   };
 
   useEffect(() => {
@@ -105,25 +107,21 @@ export const PixiPreview: React.FC = () => {
     const init = async () => {
       console.log('PixiPreview init: start');
       let instance: Application;
+      const options = {
+        width: 360,
+        height: 280,
+        backgroundColor: 0x0a0a0a,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+      };
+      console.log('PixiPreview init options', options);
       if (typeof (Application as any).create === 'function') {
         console.log('PixiPreview init: using Application.create');
-        instance = await (Application as any).create({
-          width: 360,
-          height: 280,
-          background: { color: 0x0a0a0a },
-          antialias: true,
-          resolution: window.devicePixelRatio || 1,
-        });
+        instance = await (Application as any).create(options);
       } else {
         console.log('PixiPreview init: using new Application + init');
         instance = new Application();
-        await (instance as any).init({
-          width: 360,
-          height: 280,
-          background: { color: 0x0a0a0a },
-          antialias: true,
-          resolution: window.devicePixelRatio || 1,
-        });
+        await (instance as any).init(options);
       }
 
       if (!isMounted) {
@@ -186,6 +184,7 @@ export const PixiPreview: React.FC = () => {
       if (app) {
         if (appended && appended.parentNode) {
           appended.parentNode.removeChild(appended);
+          console.log('PixiPreview cleanup: element removed');
         }
         app.destroy();
         console.log('PixiPreview cleanup: application destroyed');
