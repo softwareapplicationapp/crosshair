@@ -9,6 +9,7 @@ export const PixiPreview: React.FC = () => {
   const crosshairRef = useRef<Container | null>(null);
   const { config } = useCrosshair();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -64,6 +65,8 @@ export const PixiPreview: React.FC = () => {
       centerLines.lineTo(instance.screen.width, instance.screen.height / 2);
       instance.stage.addChildAt(centerLines, 1);
 
+      setInitialized(true);
+
     };
 
     init();
@@ -77,6 +80,8 @@ export const PixiPreview: React.FC = () => {
         app.destroy();
       }
       appRef.current = null;
+      crosshairRef.current = null;
+      setInitialized(false);
     };
   }, []);
 
@@ -165,7 +170,7 @@ export const PixiPreview: React.FC = () => {
       dot.endFill();
       crosshairRef.current.addChild(dot);
     }
-  }, [config]);
+  }, [config, initialized]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
