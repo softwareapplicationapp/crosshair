@@ -137,6 +137,8 @@ export const PixiPreview: React.FC = () => {
         appended = element as HTMLCanvasElement;
         appended.style.display = 'block';
         appended.style.margin = '0 auto';
+        appended.style.width = `${options.width}px`;
+        appended.style.height = `${options.height}px`;
         canvasRef.current!.appendChild(appended);
         console.log('PixiPreview init: appended element', appended);
         console.log('PixiPreview init: canvas size', appended.width, appended.height);
