@@ -13,54 +13,65 @@ export const PixiPreview: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Initialize PIXI Application
-    const app = new Application({
-      width: 360,
-      height: 280,
-      background: { color: 0x0a0a0a },
-      renderer: {
+    let isMounted = true;
+    let app: Application | null = null;
+
+    const init = async () => {
+      const instance = await Application.create({
+        width: 360,
+        height: 280,
+        background: { color: 0x0a0a0a },
         antialias: true,
         resolution: window.devicePixelRatio || 1,
-      },
-    });
+      });
 
-    appRef.current = app;
-    canvasRef.current.appendChild(app.view as HTMLCanvasElement);
+      if (!isMounted) {
+        instance.destroy();
+        return;
+      }
 
-    // Create crosshair container
-    const crosshairContainer = new Container();
-    crosshairContainer.x = app.screen.width / 2;
-    crosshairContainer.y = app.screen.height / 2;
-    crosshairRef.current = crosshairContainer;
-    app.stage.addChild(crosshairContainer);
+      app = instance;
+      appRef.current = instance;
+      canvasRef.current!.appendChild(instance.canvas as HTMLCanvasElement);
 
-    // Add background grid effect
-    const grid = new Graphics();
-    for (let i = 0; i <= app.screen.width; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(i, 0);
-      grid.lineTo(i, app.screen.height);
-    }
-    for (let i = 0; i <= app.screen.height; i += 20) {
-      grid.lineStyle(1, 0x333333, 0.3);
-      grid.moveTo(0, i);
-      grid.lineTo(app.screen.width, i);
-    }
-    app.stage.addChildAt(grid, 0);
+      // Create crosshair container
+      const crosshairContainer = new Container();
+      crosshairContainer.x = instance.screen.width / 2;
+      crosshairContainer.y = instance.screen.height / 2;
+      crosshairRef.current = crosshairContainer;
+      instance.stage.addChild(crosshairContainer);
 
-    // Add center lines
-    const centerLines = new Graphics();
-    centerLines.lineStyle(1, 0x555555, 0.5);
-    centerLines.moveTo(app.screen.width / 2, 0);
-    centerLines.lineTo(app.screen.width / 2, app.screen.height);
-    centerLines.moveTo(0, app.screen.height / 2);
-    centerLines.lineTo(app.screen.width, app.screen.height / 2);
-    app.stage.addChildAt(centerLines, 1);
+      // Add background grid effect
+      const grid = new Graphics();
+      for (let i = 0; i <= instance.screen.width; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(i, 0);
+        grid.lineTo(i, instance.screen.height);
+      }
+      for (let i = 0; i <= instance.screen.height; i += 20) {
+        grid.lineStyle(1, 0x333333, 0.3);
+        grid.moveTo(0, i);
+        grid.lineTo(instance.screen.width, i);
+      }
+      instance.stage.addChildAt(grid, 0);
+
+      // Add center lines
+      const centerLines = new Graphics();
+      centerLines.lineStyle(1, 0x555555, 0.5);
+      centerLines.moveTo(instance.screen.width / 2, 0);
+      centerLines.lineTo(instance.screen.width / 2, instance.screen.height);
+      centerLines.moveTo(0, instance.screen.height / 2);
+      centerLines.lineTo(instance.screen.width, instance.screen.height / 2);
+      instance.stage.addChildAt(centerLines, 1);
+
+    };
+
+    init();
 
     return () => {
-      // Use the local app variable to ensure we're cleaning up the correct instance
-      if (app && app.view && app.view.parentNode) {
-        app.view.parentNode.removeChild(app.view);
+      isMounted = false;
+      if (app && app.canvas && app.canvas.parentNode) {
+        app.canvas.parentNode.removeChild(app.canvas);
       }
       if (app) {
         app.destroy();
