@@ -135,14 +135,18 @@ export const PixiPreview: React.FC = () => {
       const element = (instance as any).canvas ?? (instance as any).view;
       if (element) {
         appended = element as HTMLCanvasElement;
+        appended.style.display = 'block';
+        appended.style.margin = '0 auto';
         canvasRef.current!.appendChild(appended);
         console.log('PixiPreview init: appended element', appended);
+        console.log('PixiPreview init: canvas size', appended.width, appended.height);
       }
 
       // Create crosshair container
       const crosshairContainer = new Container();
       crosshairContainer.x = instance.screen.width / 2;
       crosshairContainer.y = instance.screen.height / 2;
+      console.log('PixiPreview init: screen size', instance.screen.width, instance.screen.height);
       crosshairRef.current = crosshairContainer;
       instance.stage.addChild(crosshairContainer);
       console.log('PixiPreview init: crosshair container created', crosshairContainer);
