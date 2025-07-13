@@ -5,6 +5,7 @@ export const CrosshairPreview: React.FC = () => {
   const { config } = useCrosshair();
 
   const getCrosshairStyle = () => {
+    console.log('CrosshairPreview: computing style for', config);
     const baseStyle = {
       position: 'absolute' as const,
       left: `${config.position.x}%`,
@@ -21,8 +22,10 @@ export const CrosshairPreview: React.FC = () => {
 
   const renderCrosshair = () => {
     const { color, outlineColor, hasOutline, thickness, length, gap, shape, showDot, dotSize } = config;
+    console.log('CrosshairPreview: render shape', shape);
 
     if (shape === 'dot') {
+      console.log('CrosshairPreview: rendering dot');
       return (
         <div
           className="rounded-full"
@@ -37,6 +40,7 @@ export const CrosshairPreview: React.FC = () => {
     }
 
     if (shape === 'circle') {
+      console.log('CrosshairPreview: rendering circle');
       return (
         <div
           className="rounded-full border-2"
@@ -53,6 +57,7 @@ export const CrosshairPreview: React.FC = () => {
     }
 
     if (shape === 'square') {
+      console.log('CrosshairPreview: rendering square');
       return (
         <div
           className="border-2"
@@ -69,6 +74,7 @@ export const CrosshairPreview: React.FC = () => {
     }
 
     // Cross and Plus shapes
+    console.log('CrosshairPreview: rendering cross/plus');
     const lineStyle = {
       position: 'absolute' as const,
       backgroundColor: color,
@@ -121,6 +127,7 @@ export const CrosshairPreview: React.FC = () => {
         />
         {/* Center dot */}
         {showDot && (
+          console.log('CrosshairPreview: rendering center dot'),
           <div
             className="rounded-full"
             style={{

@@ -11,14 +11,20 @@ export const PixiPreview: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      console.log('PixiPreview: canvasRef not ready');
+      return;
+    }
+    console.log('PixiPreview: initializing');
 
     let isMounted = true;
     let app: Application | null = null;
 
     const init = async () => {
+      console.log('PixiPreview init: start');
       let instance: Application;
       if (typeof (Application as any).create === 'function') {
+        console.log('PixiPreview init: using Application.create');
         instance = await (Application as any).create({
           width: 360,
           height: 280,
@@ -27,6 +33,7 @@ export const PixiPreview: React.FC = () => {
           resolution: window.devicePixelRatio || 1,
         });
       } else {
+        console.log('PixiPreview init: using new Application');
         instance = new Application({
           width: 360,
           height: 280,
@@ -37,6 +44,7 @@ export const PixiPreview: React.FC = () => {
       }
 
       if (!isMounted) {
+        console.log('PixiPreview init: aborted, component unmounted');
         instance.destroy();
         return;
       }
@@ -46,6 +54,7 @@ export const PixiPreview: React.FC = () => {
       const element = (instance as any).view ?? (instance as any).canvas;
       if (element) {
         canvasRef.current!.appendChild(element as HTMLCanvasElement);
+        console.log('PixiPreview init: appended element', element);
       }
 
       // Create crosshair container
@@ -54,6 +63,7 @@ export const PixiPreview: React.FC = () => {
       crosshairContainer.y = instance.screen.height / 2;
       crosshairRef.current = crosshairContainer;
       instance.stage.addChild(crosshairContainer);
+      console.log('PixiPreview init: crosshair container created', crosshairContainer);
 
       // Add background grid effect
       const grid = new Graphics();
@@ -77,6 +87,7 @@ export const PixiPreview: React.FC = () => {
       centerLines.moveTo(0, instance.screen.height / 2);
       centerLines.lineTo(instance.screen.width, instance.screen.height / 2);
       instance.stage.addChildAt(centerLines, 1);
+      console.log('PixiPreview init: grid and center lines added');
 
     };
 
@@ -84,22 +95,28 @@ export const PixiPreview: React.FC = () => {
 
     return () => {
       isMounted = false;
+      console.log('PixiPreview cleanup');
       if (app) {
         const element = (app as any).view ?? (app as any).canvas;
         if (element && element.parentNode) {
           element.parentNode.removeChild(element);
         }
         app.destroy();
+        console.log('PixiPreview cleanup: application destroyed');
       }
       appRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!crosshairRef.current) return;
+    if (!crosshairRef.current) {
+      console.log('PixiPreview draw: crosshairRef not ready');
+      return;
+    }
 
     // Clear previous crosshair
     crosshairRef.current.removeChildren();
+    console.log('PixiPreview draw: applying config', config);
 
     const { color, outlineColor, hasOutline, thickness, length, gap, shape, showDot, dotSize, opacity, scale, rotation } = config;
 
@@ -113,6 +130,7 @@ export const PixiPreview: React.FC = () => {
     crosshairRef.current.alpha = opacity / 100;
 
     if (shape === 'dot') {
+      console.log('PixiPreview draw: shape dot');
       const dot = new Graphics();
       if (hasOutline) {
         dot.beginFill(outlineColorValue);
@@ -123,6 +141,7 @@ export const PixiPreview: React.FC = () => {
       dot.endFill();
       crosshairRef.current.addChild(dot);
     } else if (shape === 'circle') {
+      console.log('PixiPreview draw: shape circle');
       const circle = new Graphics();
       if (hasOutline) {
         circle.lineStyle(thickness + 2, outlineColorValue, 1);
@@ -132,6 +151,7 @@ export const PixiPreview: React.FC = () => {
       circle.drawCircle(0, 0, length);
       crosshairRef.current.addChild(circle);
     } else if (shape === 'square') {
+      console.log('PixiPreview draw: shape square');
       const square = new Graphics();
       if (hasOutline) {
         square.lineStyle(thickness + 2, outlineColorValue, 1);
@@ -141,6 +161,7 @@ export const PixiPreview: React.FC = () => {
       square.drawRect(-length, -length, length * 2, length * 2);
       crosshairRef.current.addChild(square);
     } else {
+      console.log('PixiPreview draw: shape cross/plus');
       // Cross and Plus shapes
       const cross = new Graphics();
       
@@ -170,6 +191,7 @@ export const PixiPreview: React.FC = () => {
 
     // Add center dot if enabled
     if (showDot) {
+      console.log('PixiPreview draw: adding center dot');
       const dot = new Graphics();
       if (hasOutline) {
         dot.beginFill(outlineColorValue);
@@ -183,20 +205,25 @@ export const PixiPreview: React.FC = () => {
   }, [config]);
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const newState = !isFullscreen;
+    console.log('PixiPreview: toggle fullscreen ->', newState);
+    setIsFullscreen(newState);
   };
 
   const handleKeyPress = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && isFullscreen) {
+      console.log('PixiPreview: escape pressed, exiting fullscreen');
       setIsFullscreen(false);
     }
   };
 
   useEffect(() => {
     if (isFullscreen) {
+      console.log('PixiPreview: entering fullscreen');
       window.addEventListener('keydown', handleKeyPress);
       return () => window.removeEventListener('keydown', handleKeyPress);
     }
+    console.log('PixiPreview: exiting fullscreen');
   }, [isFullscreen]);
 
   if (isFullscreen) {
