@@ -10,36 +10,151 @@ export const PixiPreview: React.FC = () => {
   const { config } = useCrosshair();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const drawCrosshair = (container: Container, cfg: typeof config) => {
+    container.removeChildren();
+    console.log('PixiPreview draw: applying config', cfg);
+
+    const { color, outlineColor, hasOutline, thickness, length, gap, shape, showDot, dotSize, opacity, scale, rotation } = cfg;
+
+    const colorValue = parseInt(color.replace('#', ''), 16);
+    const outlineColorValue = hasOutline ? parseInt(outlineColor.replace('#', ''), 16) : 0x000000;
+
+    container.scale.set(scale);
+    container.rotation = (rotation * Math.PI) / 180;
+    container.alpha = opacity / 100;
+
+    if (shape === 'dot') {
+      console.log('PixiPreview draw: shape dot');
+      const dot = new Graphics();
+      if (hasOutline) {
+        dot.beginFill(outlineColorValue);
+        dot.drawCircle(0, 0, thickness + 1);
+      }
+      dot.beginFill(colorValue);
+      dot.drawCircle(0, 0, thickness);
+      dot.endFill();
+      container.addChild(dot);
+    } else if (shape === 'circle') {
+      console.log('PixiPreview draw: shape circle');
+      const circle = new Graphics();
+      if (hasOutline) {
+        circle.lineStyle(thickness + 2, outlineColorValue, 1);
+        circle.drawCircle(0, 0, length);
+      }
+      circle.lineStyle(thickness, colorValue, 1);
+      circle.drawCircle(0, 0, length);
+      container.addChild(circle);
+    } else if (shape === 'square') {
+      console.log('PixiPreview draw: shape square');
+      const square = new Graphics();
+      if (hasOutline) {
+        square.lineStyle(thickness + 2, outlineColorValue, 1);
+        square.drawRect(-length, -length, length * 2, length * 2);
+      }
+      square.lineStyle(thickness, colorValue, 1);
+      square.drawRect(-length, -length, length * 2, length * 2);
+      container.addChild(square);
+    } else {
+      console.log('PixiPreview draw: shape cross/plus');
+      const cross = new Graphics();
+      if (hasOutline) {
+        cross.beginFill(outlineColorValue);
+        cross.drawRect(-length - gap, -thickness / 2 - 1, (length - gap) * 2, thickness + 2);
+        cross.drawRect(gap, -thickness / 2 - 1, (length - gap) * 2, thickness + 2);
+      }
+      cross.beginFill(colorValue);
+      cross.drawRect(-length - gap, -thickness / 2, (length - gap) * 2, thickness);
+      cross.drawRect(gap, -thickness / 2, (length - gap) * 2, thickness);
+      if (hasOutline) {
+        cross.beginFill(outlineColorValue);
+        cross.drawRect(-thickness / 2 - 1, -length - gap, thickness + 2, (length - gap) * 2);
+        cross.drawRect(-thickness / 2 - 1, gap, thickness + 2, (length - gap) * 2);
+      }
+      cross.beginFill(colorValue);
+      cross.drawRect(-thickness / 2, -length - gap, thickness, (length - gap) * 2);
+      cross.drawRect(-thickness / 2, gap, thickness, (length - gap) * 2);
+      cross.endFill();
+      container.addChild(cross);
+    }
+
+    if (showDot) {
+      console.log('PixiPreview draw: adding center dot');
+      const dot = new Graphics();
+      if (hasOutline) {
+        dot.beginFill(outlineColorValue);
+        dot.drawCircle(0, 0, dotSize + 1);
+      }
+      dot.beginFill(colorValue);
+      dot.drawCircle(0, 0, dotSize);
+      dot.endFill();
+      container.addChild(dot);
+    }
+
+    console.log('PixiPreview draw: container now has', container.children.length, 'children');
+  };
+
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      console.log('PixiPreview: canvasRef not ready');
+      return;
+    }
+    console.log('PixiPreview: initializing');
 
     let isMounted = true;
     let app: Application | null = null;
+    let appended: HTMLCanvasElement | null = null;
 
     const init = async () => {
-      const instance = await Application.create({
+      console.log('PixiPreview init: start');
+      let instance: Application;
+      const options = {
         width: 360,
         height: 280,
-        background: { color: 0x0a0a0a },
+        backgroundColor: 0x0a0a0a,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
-      });
+      };
+      console.log('PixiPreview init options', options);
+      if (typeof (Application as any).create === 'function') {
+        console.log('PixiPreview init: using Application.create');
+        instance = await (Application as any).create(options);
+      } else {
+        console.log('PixiPreview init: using new Application + init');
+        instance = new Application();
+        await (instance as any).init(options);
+      }
 
       if (!isMounted) {
+        console.log('PixiPreview init: aborted, component unmounted');
         instance.destroy();
         return;
       }
 
       app = instance;
       appRef.current = instance;
-      canvasRef.current!.appendChild(instance.canvas as HTMLCanvasElement);
+      const element = (instance as any).canvas ?? (instance as any).view;
+      if (element) {
+        appended = element as HTMLCanvasElement;
+        appended.style.display = 'block';
+        appended.style.margin = '0 auto';
+        appended.style.width = `${options.width}px`;
+        appended.style.height = `${options.height}px`;
+        canvasRef.current!.appendChild(appended);
+        console.log('PixiPreview init: appended element', appended);
+        console.log('PixiPreview init: canvas size', appended.width, appended.height);
+      }
 
       // Create crosshair container
       const crosshairContainer = new Container();
       crosshairContainer.x = instance.screen.width / 2;
       crosshairContainer.y = instance.screen.height / 2;
+      console.log('PixiPreview init: screen size', instance.screen.width, instance.screen.height);
       crosshairRef.current = crosshairContainer;
       instance.stage.addChild(crosshairContainer);
+      console.log('PixiPreview init: crosshair container created', crosshairContainer);
+
+      // Initial draw
+      drawCrosshair(crosshairContainer, config);
 
       // Add background grid effect
       const grid = new Graphics();
@@ -63,6 +178,7 @@ export const PixiPreview: React.FC = () => {
       centerLines.moveTo(0, instance.screen.height / 2);
       centerLines.lineTo(instance.screen.width, instance.screen.height / 2);
       instance.stage.addChildAt(centerLines, 1);
+      console.log('PixiPreview init: grid and center lines added');
 
     };
 
@@ -70,118 +186,47 @@ export const PixiPreview: React.FC = () => {
 
     return () => {
       isMounted = false;
-      if (app && app.canvas && app.canvas.parentNode) {
-        app.canvas.parentNode.removeChild(app.canvas);
-      }
+      console.log('PixiPreview cleanup');
       if (app) {
+        if (appended && appended.parentNode) {
+          appended.parentNode.removeChild(appended);
+          console.log('PixiPreview cleanup: element removed');
+        }
         app.destroy();
+        console.log('PixiPreview cleanup: application destroyed');
       }
       appRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!crosshairRef.current) return;
-
-    // Clear previous crosshair
-    crosshairRef.current.removeChildren();
-
-    const { color, outlineColor, hasOutline, thickness, length, gap, shape, showDot, dotSize, opacity, scale, rotation } = config;
-
-    // Convert hex color to number
-    const colorValue = parseInt(color.replace('#', ''), 16);
-    const outlineColorValue = hasOutline ? parseInt(outlineColor.replace('#', ''), 16) : 0x000000;
-
-    // Apply transformations
-    crosshairRef.current.scale.set(scale);
-    crosshairRef.current.rotation = (rotation * Math.PI) / 180;
-    crosshairRef.current.alpha = opacity / 100;
-
-    if (shape === 'dot') {
-      const dot = new Graphics();
-      if (hasOutline) {
-        dot.beginFill(outlineColorValue);
-        dot.drawCircle(0, 0, thickness + 1);
-      }
-      dot.beginFill(colorValue);
-      dot.drawCircle(0, 0, thickness);
-      dot.endFill();
-      crosshairRef.current.addChild(dot);
-    } else if (shape === 'circle') {
-      const circle = new Graphics();
-      if (hasOutline) {
-        circle.lineStyle(thickness + 2, outlineColorValue, 1);
-        circle.drawCircle(0, 0, length);
-      }
-      circle.lineStyle(thickness, colorValue, 1);
-      circle.drawCircle(0, 0, length);
-      crosshairRef.current.addChild(circle);
-    } else if (shape === 'square') {
-      const square = new Graphics();
-      if (hasOutline) {
-        square.lineStyle(thickness + 2, outlineColorValue, 1);
-        square.drawRect(-length, -length, length * 2, length * 2);
-      }
-      square.lineStyle(thickness, colorValue, 1);
-      square.drawRect(-length, -length, length * 2, length * 2);
-      crosshairRef.current.addChild(square);
-    } else {
-      // Cross and Plus shapes
-      const cross = new Graphics();
-      
-      // Horizontal line
-      if (hasOutline) {
-        cross.beginFill(outlineColorValue);
-        cross.drawRect(-length - gap, -thickness/2 - 1, (length - gap) * 2, thickness + 2);
-        cross.drawRect(gap, -thickness/2 - 1, (length - gap) * 2, thickness + 2);
-      }
-      cross.beginFill(colorValue);
-      cross.drawRect(-length - gap, -thickness/2, (length - gap) * 2, thickness);
-      cross.drawRect(gap, -thickness/2, (length - gap) * 2, thickness);
-      
-      // Vertical line
-      if (hasOutline) {
-        cross.beginFill(outlineColorValue);
-        cross.drawRect(-thickness/2 - 1, -length - gap, thickness + 2, (length - gap) * 2);
-        cross.drawRect(-thickness/2 - 1, gap, thickness + 2, (length - gap) * 2);
-      }
-      cross.beginFill(colorValue);
-      cross.drawRect(-thickness/2, -length - gap, thickness, (length - gap) * 2);
-      cross.drawRect(-thickness/2, gap, thickness, (length - gap) * 2);
-      
-      cross.endFill();
-      crosshairRef.current.addChild(cross);
+    if (!crosshairRef.current) {
+      console.log('PixiPreview draw: crosshairRef not ready');
+      return;
     }
-
-    // Add center dot if enabled
-    if (showDot) {
-      const dot = new Graphics();
-      if (hasOutline) {
-        dot.beginFill(outlineColorValue);
-        dot.drawCircle(0, 0, dotSize + 1);
-      }
-      dot.beginFill(colorValue);
-      dot.drawCircle(0, 0, dotSize);
-      dot.endFill();
-      crosshairRef.current.addChild(dot);
-    }
+    drawCrosshair(crosshairRef.current, config);
   }, [config]);
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const newState = !isFullscreen;
+    console.log('PixiPreview: toggle fullscreen ->', newState);
+    setIsFullscreen(newState);
   };
 
   const handleKeyPress = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && isFullscreen) {
+      console.log('PixiPreview: escape pressed, exiting fullscreen');
       setIsFullscreen(false);
     }
   };
 
   useEffect(() => {
     if (isFullscreen) {
+      console.log('PixiPreview: entering fullscreen');
       window.addEventListener('keydown', handleKeyPress);
       return () => window.removeEventListener('keydown', handleKeyPress);
     }
+    console.log('PixiPreview: exiting fullscreen');
   }, [isFullscreen]);
 
   if (isFullscreen) {

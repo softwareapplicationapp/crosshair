@@ -95,14 +95,21 @@ export const CrosshairProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [savedConfigs]);
 
   const updateConfig = (updates: Partial<CrosshairConfig>) => {
-    setConfig(prev => ({ ...prev, ...updates }));
+    console.log('updateConfig called with', updates);
+    setConfig(prev => {
+      const next = { ...prev, ...updates };
+      console.log('updateConfig new config', next);
+      return next;
+    });
   };
 
   const updateKeybind = (id: string, updates: Partial<Keybind>) => {
+    console.log('updateKeybind', id, updates);
     setKeybinds(prev => prev.map(kb => kb.id === id ? { ...kb, ...updates } : kb));
   };
 
   const saveConfig = (configToSave: CrosshairConfig) => {
+    console.log('saveConfig', configToSave);
     setSavedConfigs(prev => {
       const existing = prev.find(c => c.id === configToSave.id);
       if (existing) {
@@ -113,10 +120,12 @@ export const CrosshairProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const loadConfig = (configToLoad: CrosshairConfig) => {
+    console.log('loadConfig', configToLoad);
     setConfig(configToLoad);
   };
 
   const deleteConfig = (id: string) => {
+    console.log('deleteConfig', id);
     setSavedConfigs(prev => prev.filter(c => c.id !== id));
   };
 

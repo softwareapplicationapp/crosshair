@@ -380,11 +380,16 @@ body {
 
 .preview-canvas {
   flex: 1;
-  background: 
+  background:
     radial-gradient(circle at 30% 30%, rgba(249, 115, 22, 0.1) 0%, transparent 50%),
     linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
   position: relative;
   overflow: hidden;
+}
+
+.preview-canvas canvas {
+  display: block;
+  margin: 0 auto;
 }
 
 /* Fullscreen Overlay */
